@@ -1,0 +1,172 @@
+---
+// Este archivo muestra el detalle de un grupo y su lista de la compra
+// Si usas rutas dinámicas tipo [id].astro, renómbralo según tu router
+---
+<html>
+  <head>
+    <title>Detalle del Grupo</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body { background: #f6f8fa; font-family: 'Inter', Arial, sans-serif; margin: 0; }
+      .container { background: #fff; border-radius: 16px; box-shadow: 0 2px 16px 0 #0001; padding: 2.5rem 2rem 2rem 2rem; min-width: 320px; max-width: 95vw; width: 100%; margin: 3rem auto 0 auto; display: flex; flex-direction: column; align-items: center; gap: 1.2rem; position: relative; }
+      h1 { font-size: 2rem; margin-bottom: 1rem; color: #222; letter-spacing: 0.03em; text-align: center; }
+      ul { list-style: none; margin: 0; padding: 0; width: 100%; }
+      li { background: #f3f3fd; margin: 0.5rem 0; padding: 1rem; border-radius: 10px; font-size: 1.1rem; color: #333; box-shadow: 0 1px 4px #0001; transition: background 0.2s; }
+      li:hover { background: #e0e7ff; }
+      .empty { color: #b00; text-align: center; margin-top: 1rem; }
+      .volver-btn { position: absolute; top: 1.1rem; left: 1.1rem; padding: 0.4rem 0.7rem; background: #ece6ff; color: #7b61ff; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px #0001; transition: background 0.2s; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <button class="volver-btn" onclick="window.history.back()" aria-label="Atrás">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M17 12H7" stroke="#7b61ff" stroke-width="3" stroke-linecap="round"/><path d="M11 7L6 12L11 17" stroke="#7b61ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+      </button>
+      <h1 id="group-title">Grupo</h1>
+      <form id="add-item-form" style="display:none; width:100%; margin-bottom:1rem;">
+        <input id="item-input" type="text" placeholder="Producto o artículo" style="width:70%;padding:0.7rem; border-radius:8px; border:1px solid #ddd; font-size:1rem;" required />
+        <button type="submit" style="padding:0.7rem 1.2rem; margin-left:0.7rem; background:#7b61ff; color:#fff; border:none; border-radius:8px; font-size:1rem; cursor:pointer;">Añadir</button>
+      </form>
+      <ul id="shopping-list" style="display:none;"></ul>
+      <p id="empty-msg" class="empty" style="display:none;">La lista de la compra está vacía.</p>
+      <p id="login-msg" style="color:#b00; display:none; text-align:center;">Debes <a href='/login'>iniciar sesión</a> para ver la lista.</p>
+      <p id="error-msg" class="empty" style="display:none;"></p>
+    </div>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+      import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+      import { getFirestore, doc, getDoc, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+      // Configuración de Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyATDEW5DXHEU5ezVOY6Fl_MxqFvYHhq5Uo",
+        authDomain: "compra-familia.firebaseapp.com",
+        projectId: "compra-familia",
+        storageBucket: "compra-familia.appspot.com",
+        messagingSenderId: "380227123539",
+        appId: "1:380227123539:web:e2e698d420e116a6c849a6"
+      };
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      // Obtener el groupId de la URL (ej: /grupo?id=3JFnjc7Ro9YbsLz0Hgwl)
+      function getGroupIdFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('id');
+      }
+
+      const groupTitle = document.getElementById('group-title');
+      const shoppingList = document.getElementById('shopping-list');
+      const emptyMsg = document.getElementById('empty-msg');
+      const loginMsg = document.getElementById('login-msg');
+      const errorMsg = document.getElementById('error-msg');
+      const addItemForm = document.getElementById('add-item-form');
+      const itemInput = document.getElementById('item-input');
+
+      onAuthStateChanged(auth, async user => {
+        if (!user) {
+          shoppingList.style.display = 'none';
+          emptyMsg.style.display = 'none';
+          loginMsg.style.display = 'block';
+          errorMsg.style.display = 'none';
+          return;
+        }
+        loginMsg.style.display = 'none';
+        const groupId = getGroupIdFromUrl();
+        if (!groupId) {
+          errorMsg.style.display = 'block';
+          errorMsg.textContent = 'No se ha especificado ningún grupo.';
+          return;
+        }
+        try {
+          // Verifica que el usuario es miembro del grupo
+          const groupRef = doc(db, 'groups', groupId);
+          const groupSnap = await getDoc(groupRef);
+          if (!groupSnap.exists()) {
+            errorMsg.style.display = 'block';
+            errorMsg.textContent = 'El grupo no existe.';
+            addItemForm.style.display = 'none';
+            return;
+          }
+          const groupData = groupSnap.data();
+          groupTitle.textContent = groupData.name || 'Grupo';
+          if (!groupData.members || !groupData.members.includes(user.uid)) {
+            errorMsg.style.display = 'block';
+            errorMsg.textContent = 'No tienes permisos para ver este grupo.';
+            addItemForm.style.display = 'none';
+            return;
+          }
+          // Mostrar formulario para añadir ítems
+          addItemForm.style.display = 'flex';
+
+          // Leer la lista de la compra
+          async function cargarLista() {
+            try {
+              const listRef = collection(db, 'groups', groupId, 'shoppingList');
+              const listSnap = await getDocs(listRef);
+              const items = [];
+              listSnap.forEach(itemDoc => {
+                items.push({ id: itemDoc.id, ...itemDoc.data() });
+              });
+              if (items.length === 0) {
+                shoppingList.style.display = 'none';
+                emptyMsg.style.display = 'block';
+              } else {
+                shoppingList.innerHTML = '';
+                items.forEach(item => {
+                  const li = document.createElement('li');
+                  li.textContent = item.name || item.id;
+                  shoppingList.appendChild(li);
+                });
+                shoppingList.style.display = 'block';
+                emptyMsg.style.display = 'none';
+              }
+              errorMsg.style.display = 'none';
+            } catch (e) {
+              shoppingList.style.display = 'none';
+              emptyMsg.style.display = 'none';
+              errorMsg.style.display = 'block';
+              if (e.code === 'permission-denied') {
+                errorMsg.textContent = 'No tienes permisos para ver la lista de la compra de este grupo.';
+              } else {
+                errorMsg.textContent = 'Error al obtener la lista: ' + (e.message || e);
+              }
+            }
+          }
+          await cargarLista();
+
+          // Añadir ítem a la lista
+          addItemForm.onsubmit = async (ev) => {
+            ev.preventDefault();
+            const value = itemInput.value.trim();
+            if (!value) return;
+            try {
+              const listRef = collection(db, 'groups', groupId, 'shoppingList');
+              await addDoc(listRef, { name: value, createdAt: serverTimestamp(), createdBy: user.uid });
+              itemInput.value = '';
+              await cargarLista();
+            } catch (e) {
+              errorMsg.style.display = 'block';
+              if (e.code === 'permission-denied') {
+                errorMsg.textContent = 'No tienes permisos para añadir ítems a la lista.';
+              } else {
+                errorMsg.textContent = 'Error al añadir ítem: ' + (e.message || e);
+              }
+            }
+          }
+        } catch (e) {
+          shoppingList.style.display = 'none';
+          emptyMsg.style.display = 'none';
+          errorMsg.style.display = 'block';
+          if (e.code === 'permission-denied') {
+            errorMsg.textContent = 'No tienes permisos para ver este grupo.';
+          } else {
+            errorMsg.textContent = 'Error inesperado: ' + (e.message || e);
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

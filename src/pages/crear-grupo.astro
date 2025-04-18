@@ -1,0 +1,207 @@
+---
+// Firebase ahora se usa desde window.auth y window.db (CDN global)
+// Elimina imports ES6 de Firebase aquí
+
+let message = '';
+let error = '';
+---
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Crear Grupo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+@import url('/src/styles/global.css');
+
+
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  font-family: 'Inter', Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.main-container, .container {
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+  border-radius: 1.2rem;
+  box-shadow: var(--color-shadow);
+  padding: 2.5rem 2rem;
+  min-width: 320px;
+  max-width: 700px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+h1, h2, h3 {
+  color: var(--color-heading);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+a {
+  color: var(--color-link);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+a:hover {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+@media (max-width: 600px) {
+  .main-container, .container {
+    padding: 1.2rem 0.5rem;
+    max-width: 98vw;
+  }
+  h1 {
+    font-size: 1.4rem;
+  }
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+input[type="text"] {
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+  transition: border 0.2s;
+}
+input[type="text"]:focus {
+  border: 1.5px solid var(--color-link);
+  outline: none;
+}
+button[type="submit"] {
+  background: var(--color-btn-main-bg);
+  color: var(--color-btn-main-text);
+  border: none;
+  padding: 0.8rem 0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 0.5rem;
+}
+button[type="submit"]:hover {
+  background: linear-gradient(90deg, #4e9fff 0%, #7b61ff 100%);
+}
+.btn-cancel {
+  background: var(--color-btn-cancel-bg);
+  color: var(--color-link);
+  border: none;
+  padding: 0.7rem 0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-cancel:hover {
+  background: var(--color-link-hover);
+  color: #fff;
+}
+.status-message {
+  margin: 0.5rem 0 0 0;
+  font-size: 1rem;
+  text-align: center;
+}
+@media (max-width: 480px) {
+  .container {
+    min-width: unset;
+    padding: 1.2rem 0.5rem;
+  }
+  h1 {
+    font-size: 1.2rem;
+  }
+}
+</style>
+  </head>
+  <body>
+    <div class="main-card position-relative">
+  <button class="btn-cancel position-absolute back-btn" onclick="window.history.back()" aria-label="Atrás">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M17 12H7" stroke="#7b61ff" stroke-width="3" stroke-linecap="round"/><path d="M11 7L6 12L11 17" stroke="#7b61ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+  </button>
+  <h1 class="main-title">Crear nuevo grupo</h1>
+  <div id="form-container" style="width:100%">
+    <form id="crearGrupoForm" class="crear-grupo-form" style="display:none;" autocomplete="off">
+      <input type="text" name="nombreGrupo" placeholder="Nombre del grupo" required autocomplete="off" />
+      <button type="submit" class="btn-main">Crear grupo</button>
+    </form>
+    <p id="msg" class="status-message status-success"></p>
+    <p id="err" class="status-message status-error"></p>
+    <p id="login-msg" class="status-message status-login" style="display:none; text-align:center; color:var(--color-link); font-weight:600;">Debes <a href='/login'>iniciar sesión</a> para crear un grupo.</p>
+  </div>
+    </div>
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js';
+      import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js';
+      import { getFirestore, addDoc, collection, serverTimestamp, updateDoc, setDoc, doc, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js';
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyATDEW5DXHEU5ezVOY6Fl_MxqFvYHhq5Uo",
+        authDomain: "compra-familia.firebaseapp.com",
+        projectId: "compra-familia",
+        storageBucket: "compra-familia.firebasestorage.app",
+        messagingSenderId: "380227123539",
+        appId: "1:380227123539:web:e2e698d420e116a6c849a6"
+      };
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+
+      const form = document.getElementById('crearGrupoForm');
+      const msg = document.getElementById('msg');
+      const err = document.getElementById('err');
+      const loginMsg = document.getElementById('login-msg');
+
+      onAuthStateChanged(auth, user => {
+        if (user) {
+          form.style.display = 'flex';
+          loginMsg.style.display = 'none';
+        } else {
+          form.style.display = 'none';
+          loginMsg.style.display = 'block';
+        }
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          // 1. Crea el grupo
+          const groupRef = await addDoc(collection(db, 'groups'), {
+            name: form.nombreGrupo.value,
+            createdBy: auth.currentUser.uid,
+            createdAt: serverTimestamp(),
+            members: [auth.currentUser.uid]
+          });
+          // 3. Añade el groupId al usuario
+          const userRef = doc(db, 'users', auth.currentUser.uid);
+          await setDoc(userRef, {
+            groupIds: arrayUnion(groupRef.id)
+          }, { merge: true });
+
+          window.location.href = '/mis-grupos';
+        } catch (error) {
+          msg.textContent = 'Error al crear el grupo: ' + (error.message || error);
+          msg.style.display = 'block';
+        }
+      });
+    </script>
+  </body>
+</html>

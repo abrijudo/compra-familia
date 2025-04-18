@@ -1,0 +1,451 @@
+---
+export const prerender = false;
+---
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Lista de la compra</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+:root {
+  --color-bg: #fff;
+  --color-bg-alt: #f9f9f9;
+  --color-text: #181818;
+  --color-link: #4e36b6;
+  --color-link-hover: #2e8fff;
+  --color-border: #e0e0e0;
+  --color-btn-main-bg: linear-gradient(90deg, #7b61ff 60%, #4e9fff 100%);
+  --color-btn-main-text: #fff;
+  --color-btn-cancel-bg: #ece6ff;
+  --color-success: #0a0;
+  --color-error: #b00;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #181828;
+    --color-bg-alt: #23233a;
+    --color-text: #f6f8fa;
+    --color-link: #a7a6ff;
+    --color-link-hover: #7bcbff;
+    --color-border: #44446a;
+    --color-btn-main-bg: linear-gradient(90deg, #4e9fff 60%, #7b61ff 100%);
+    --color-btn-main-text: #222;
+    --color-btn-cancel-bg: #22223a;
+    --color-success: #7fff8c;
+    --color-error: #ff7b7b;
+  }
+}
+
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: #f6f8fa;
+        font-family: 'Inter', Arial, sans-serif;
+        margin: 0;
+      }
+      .container {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 16px 0 #0001;
+        padding: 2.5rem 2rem;
+        min-width: 320px;
+        max-width: 95vw;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.2rem;
+      }
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #222;
+        letter-spacing: 0.03em;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+      }
+      li {
+        background: #f3f3fd;
+        margin: 0.5rem 0;
+        padding: 1rem;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        color: #333;
+        box-shadow: 0 1px 4px #0001;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+      }
+      li:hover {
+        background: #e0e7ff;
+      }
+      .empty {
+        color: #b00;
+        text-align: center;
+        margin-top: 1rem;
+      }
+      form {
+        display: flex;
+        gap: 1rem;
+        width: 100%;
+      }
+      input[type="text"] {
+        flex: 1;
+        padding: 0.7rem 1rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1rem;
+        background: #f9f9f9;
+        transition: border 0.2s;
+      }
+      input[type="text"]:focus {
+        border: 1.5px solid #7b61ff;
+        outline: none;
+      }
+      button[type="submit"], .comprado-btn {
+        background: linear-gradient(90deg, #7b61ff 60%, #4e9fff 100%);
+        color: #fff;
+        border: none;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button[type="submit"]:hover, .comprado-btn:hover {
+        background: linear-gradient(90deg, #4e9fff 0%, #7b61ff 100%);
+      }
+      #login-msg {
+        color: #b00;
+        text-align: center;
+        margin: 1.5rem 0;
+      }
+      @media (max-width: 480px) {
+        .container {
+          min-width: unset;
+          padding: 1.2rem 0.5rem;
+        }
+        h1 {
+          font-size: 1.2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" style="position:relative;">
+      <button onclick="window.history.back()" aria-label="Atrás" style="position:absolute;top:1.1rem;left:1.1rem;padding:0.4rem 0.7rem;background:#ece6ff;color:#7b61ff;border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px #0001;transition:background 0.2s;">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M17 12H7" stroke="#7b61ff" stroke-width="3" stroke-linecap="round"/><path d="M11 7L6 12L11 17" stroke="#7b61ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+</button>
+      <h1>Lista de la compra</h1>
+<p id="group-name" style="font-size:1.2rem;color:#7b61ff;font-weight:600;margin-bottom:1.2rem;"></p>
+      <section id="members-section" style="width:100%; margin-bottom:2rem; display:none;">
+        <h2 style="font-size:1.2rem; color:#444;">Miembros del grupo</h2>
+        <ul id="members-list"></ul>
+        <form id="add-member-form" style="margin-top:1rem; display:flex; gap:0.5rem;">
+          <input list="usuarios-lista" id="usuario-autocomplete" name="usuarioMiembro" placeholder="Busca usuario por nombre o correo" autocomplete="off" required style="flex:1;" />
+          <datalist id="usuarios-lista"></datalist>
+          <button type="submit">Invitar</button>
+        </form>
+        <p id="member-msg" style="color:green; display:none;"></p>
+        <p id="member-err" style="color:red; display:none;"></p>
+      </section>
+      <form id="add-item-form" style="display:none;">
+        <input type="text" name="nombreItem" placeholder="Producto o artículo" required />
+        <button type="submit">Añadir</button>
+      </form>
+      <ul id="shopping-list" style="display:none;"></ul>
+      <p id="empty-msg" class="empty error-msg" style="display:none;"></p>
+      <p id="login-msg" style="display:none;">Debes <a href='/login'>Iniciar sesión</a> para ver y editar la lista.</p>
+    </div>
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js';
+      import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js';
+      import { getFirestore, collection, query, where, getDocs, getDoc, addDoc, deleteDoc, doc, onSnapshot, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js';
+
+      const firebaseConfig = {
+  apiKey: "AIzaSyATDEW5DXHEU5ezVOY6Fl_MxqFvYHhq5Uo",
+  authDomain: "compra-familia.firebaseapp.com",
+  projectId: "compra-familia",
+  storageBucket: "compra-familia.firebasestorage.app",
+  messagingSenderId: "380227123539",
+  appId: "1:380227123539:web:e2e698d420e116a6c849a6"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const groupNameEl = document.getElementById('group-name');
+const groupId = window.location.pathname.split('/').pop();
+
+// Obtener y mostrar el nombre del grupo
+const groupRef = doc(db, 'groups', groupId);
+getDoc(groupRef).then(snap => {
+  if (snap.exists()) {
+    groupNameEl.textContent = snap.data().name || '';
+  } else {
+    groupNameEl.textContent = '(Grupo no encontrado)';
+  }
+});
+
+// Asignar rol admin a Abraham Álvarez Leal si está en el grupo
+(async () => {
+  const membersCol = collection(db, 'groups', groupId, 'members');
+  const membersSnap = await getDocs(membersCol);
+  for (const memberDoc of membersSnap.docs) {
+    const uid = memberDoc.id;
+    const userDoc = await getDoc(doc(db, 'users', uid));
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      if (data.nombre === 'Abraham' && data.apellidos === 'Álvarez Leal') {
+        // Actualiza el campo role solo si no es admin
+        const memberData = memberDoc.data();
+        if (memberData.role !== 'admin') {
+          await updateDoc(doc(db, 'groups', groupId, 'members', uid), { role: 'admin' });
+        }
+      }
+    }
+  }
+})();
+      const addForm = document.getElementById('add-item-form');
+      const list = document.getElementById('shopping-list');
+      const emptyMsg = document.getElementById('empty-msg');
+      const loginMsg = document.getElementById('login-msg');
+
+      // --- Invitación de miembros ---
+      const addMemberForm = document.getElementById('add-member-form');
+      const memberMsg = document.getElementById('member-msg');
+      const memberErr = document.getElementById('member-err');
+      const usuarioAutocomplete = document.getElementById('usuario-autocomplete');
+      const usuariosDatalist = document.getElementById('usuarios-lista');
+
+      // Cargar usuarios registrados (excepto el actual y los ya miembros)
+      let usuariosDisponibles = [];
+      async function cargarUsuariosDisponibles() {
+        const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js');
+        const usersSnap = await getDocs(collection(db, 'users'));
+        // Obtener miembros actuales del grupo
+        const groupSnap = await getDoc(doc(db, 'groups', groupId));
+        const miembrosUids = groupSnap.exists() ? (groupSnap.data().members || []) : [];
+        usuariosDisponibles = [];
+        usuariosDatalist.innerHTML = '';
+        usersSnap.forEach(docu => {
+          const data = docu.data();
+          // No incluir al usuario actual ni a los ya miembros
+          if (docu.id !== auth.currentUser.uid && !miembrosUids.includes(docu.id)) {
+            const label = `${data.nombre || ''} ${data.apellidos || ''} (${data.email})`.trim();
+            usuariosDisponibles.push({ email: data.email, label });
+            const option = document.createElement('option');
+            option.value = label;
+            usuariosDatalist.appendChild(option);
+          }
+        });
+      }
+
+      let unsubscribe = null;
+      onAuthStateChanged(auth, user => {
+        if (!user) {
+          addForm.style.display = 'none';
+          list.style.display = 'none';
+          emptyMsg.style.display = 'none';
+          loginMsg.style.display = 'block';
+          if (unsubscribe) unsubscribe();
+          return;
+        }
+        loginMsg.style.display = 'none';
+        addForm.style.display = 'flex';
+        // Suscribirse en tiempo real a los items de la lista
+        const itemsRef = collection(db, 'groups', groupId, 'shoppingList');
+        const q = query(itemsRef, orderBy('createdAt', 'desc'));
+        unsubscribe = onSnapshot(q, snap => {
+          list.innerHTML = '';
+          if (snap.empty) {
+            list.style.display = 'none';
+            emptyMsg.style.display = 'block';
+          } else {
+            snap.forEach(docSnap => {
+              const item = docSnap.data();
+              const li = document.createElement('li');
+              li.textContent = item.name;
+              const btn = document.createElement('button');
+              btn.textContent = 'Comprado';
+              btn.className = 'comprado-btn';
+              btn.onclick = async () => {
+                await deleteDoc(doc(db, 'groups', groupId, 'shoppingList', docSnap.id));
+              };
+              li.appendChild(btn);
+              list.appendChild(li);
+            });
+            list.style.display = 'block';
+            emptyMsg.style.display = 'none';
+          }
+        });
+      });
+
+      addForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nombreItem = addForm.nombreItem.value.trim();
+        const user = auth.currentUser;
+        if (!user) return;
+        if (!nombreItem) return;
+        // Verificar si ya existe el producto (case-insensitive)
+        const itemsRef = collection(db, 'groups', groupId, 'shoppingList');
+        const q = query(itemsRef);
+        const snap = await getDocs(q);
+        const existe = snap.docs.some(doc => (doc.data().name || '').trim().toLowerCase() === nombreItem.toLowerCase());
+        if (existe) {
+          emptyMsg.textContent = 'Ese producto ya está en la lista.';
+          emptyMsg.style.display = 'block';
+          return;
+        } else {
+          emptyMsg.style.display = 'none';
+        }
+        await addDoc(itemsRef, {
+          name: nombreItem,
+          addedBy: user.uid,
+          createdAt: serverTimestamp()
+        });
+        addForm.reset();
+      });
+      // --- Gestión de miembros ---
+      const membersSection = document.getElementById('members-section');
+      const membersList = document.getElementById('members-list');
+      // Mostrar lista de miembros en tiempo real
+      import('https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js').then(({ collection, onSnapshot, getDoc, doc }) => {
+        const membersRef = collection(db, 'groups', groupId, 'members');
+        onSnapshot(membersRef, async (snap) => {
+          membersList.innerHTML = '';
+          if (snap.empty) {
+            membersList.innerHTML = '<li>(Sin miembros)</li>';
+            membersSection.style.display = 'block';
+            return;
+          }
+          for (const memberDoc of snap.docs) {
+  const uid = memberDoc.id;
+  // Busca el email o nombre en la colección users
+  let display = uid;
+  try {
+    const userDoc = await getDoc(doc(db, 'users', uid));
+    if (userDoc.exists()) {
+      const data = userDoc.data();
+      display = data.nombre && data.apellidos ? data.nombre + ' ' + data.apellidos : (data.email || uid);
+      // Añade el rol si existe
+      const memberData = memberDoc.data();
+      if (memberData.role) {
+        display += ` (${memberData.role})`;
+      }
+    }
+  } catch (e) {
+    display = uid;
+  }
+  const li = document.createElement('li');
+  li.textContent = display;
+  membersList.appendChild(li);
+}
+membersSection.style.display = 'block';
+          membersSection.style.display = 'block';
+        });
+      });
+
+      let currentUserEmail = null;
+      let isAdmin = false;
+      async function renderMembers() {
+        membersList.innerHTML = '';
+        // Leer miembros desde el array del documento del grupo
+        const groupRef = doc(db, 'groups', groupId);
+        const groupSnap = await getDoc(groupRef);
+        if (!groupSnap.exists()) {
+          membersList.innerHTML = '<li>Grupo no encontrado.</li>';
+          return;
+        }
+        const groupData = groupSnap.data();
+        // Filtra UIDs vacíos
+        const memberUids = (groupData.members || []).filter(uid => !!uid);
+        // Contador y lista coherentes
+        let contadorTxt = '';
+        if (memberUids.length === 0) {
+          contadorTxt = '(Sin miembros)';
+          const contadorLi = document.createElement('li');
+          contadorLi.style.fontStyle = 'italic';
+          contadorLi.textContent = contadorTxt;
+          membersList.appendChild(contadorLi);
+          return;
+        } else if (memberUids.length === 1) {
+          contadorTxt = '(1 miembro)';
+        } else {
+          contadorTxt = `(${memberUids.length} miembros)`;
+        }
+        // Añade el contador arriba de la lista solo si hay miembros
+        const contadorLi = document.createElement('li');
+        contadorLi.style.fontStyle = 'italic';
+        contadorLi.textContent = contadorTxt;
+        membersList.appendChild(contadorLi);
+        // Lista de miembros
+        for (const uid of memberUids) {
+          let display = uid;
+          try {
+            const userDoc = await getDoc(doc(db, 'users', uid));
+            if (userDoc.exists()) {
+              const data = userDoc.data();
+              display = data.email || uid;
+              if (data.nombre && data.apellidos) {
+                display = `${data.nombre} ${data.apellidos} (${data.email || uid})`;
+              }
+            }
+          } catch (e) {
+            display = uid;
+          }
+          const li = document.createElement('li');
+          li.textContent = display;
+          membersList.appendChild(li);
+        }
+      }
+
+      onAuthStateChanged(auth, async user => {
+        if (user) {
+          currentUserEmail = user.email;
+          membersSection.style.display = 'block';
+
+          // Comprobar si el usuario es admin
+          let admin = false;
+          const groupSnap = await getDoc(doc(db, 'groups', groupId));
+          if (groupSnap.exists()) {
+            const groupData = groupSnap.data();
+            const memberUids = (groupData.members || []).filter(uid => !!uid);
+            if (memberUids.includes(user.uid)) {
+              // Busca el rol en la subcolección members
+              const memberDocRef = doc(db, 'groups', groupId, 'members', user.uid);
+              const memberDoc = await getDoc(memberDocRef);
+              if (memberDoc.exists()) {
+                if (memberDoc.data().role === 'admin') {
+                  admin = true;
+                }
+              } else {
+                // Si no existe, crearlo como admin (solo para asegurar acceso)
+                const { setDoc } = await import('https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js');
+                await setDoc(memberDocRef, { role: 'admin', joinedAt: new Date() }, { merge: true });
+                admin = true;
+              }
+            }
+          }
+          isAdmin = admin;
+          addMemberForm.style.display = isAdmin ? 'flex' : 'none';
+
+          await renderMembers();
+        } else {
+          membersSection.style.display = 'none';
+        }
+      });
+
+
+    </script>
+  </body>
+</html>

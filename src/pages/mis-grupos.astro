@@ -1,0 +1,367 @@
+---
+---
+<div class="main-card">
+  <button class="volver-btn" onclick="window.history.back()" aria-label="Atrás">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M17 12H7" stroke="#7b61ff" stroke-width="3" stroke-linecap="round"/><path d="M11 7L6 12L11 17" stroke="#7b61ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+  </button>
+  <h1 class="main-title">Mis Grupos</h1>
+  <ul id="group-list" class="grupo-lista" style="display:none;"></ul>
+  <p id="empty-msg" class="status-message status-empty" style="display:none;">No perteneces a ningún grupo todavía.</p>
+  <p id="login-msg" class="status-message status-error" style="display:none;">Debes <a href='/login'>iniciar sesión</a> para ver tus grupos.</p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyATDEW5DXHEU5ezVOY6Fl_MxqFvYHhq5Uo",
+  authDomain: "compra-familia.firebaseapp.com",
+  projectId: "compra-familia",
+  storageBucket: "compra-familia.appspot.com",
+  messagingSenderId: "380227123539",
+  appId: "1:380227123539:web:e2e698d420e116a6c849a6"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const groupList = document.getElementById('group-list');
+const emptyMsg = document.getElementById('empty-msg');
+const loginMsg = document.getElementById('login-msg');
+
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    groupList.style.display = 'none';
+    emptyMsg.style.display = 'none';
+    loginMsg.style.display = 'block';
+    return;
+  }
+  loginMsg.style.display = 'none';
+  try {
+    // Buscar grupos donde el usuario es miembro
+    const q = query(collection(db, 'groups'), where('members', 'array-contains', user.uid));
+    const querySnapshot = await getDocs(q);
+    const grupos = [];
+    querySnapshot.forEach(docSnap => {
+      grupos.push({ id: docSnap.id, name: docSnap.data().name || docSnap.id });
+    });
+    if (!grupos || grupos.length === 0) {
+      groupList.style.display = 'none';
+      emptyMsg.style.display = 'block';
+      emptyMsg.textContent = 'No perteneces a ningún grupo todavía.';
+      return;
+    }
+    groupList.innerHTML = '';
+    grupos.forEach(grupo => {
+      const li = document.createElement('li');
+      li.textContent = grupo.name;
+      li.classList.add('grupo-item');
+      li.onclick = () => window.location.href = `/grupo/${grupo.id}`;
+      groupList.appendChild(li);
+    });
+    groupList.style.display = 'block';
+    emptyMsg.style.display = 'none';
+  } catch (e) {
+    groupList.style.display = 'none';
+    emptyMsg.style.display = 'block';
+    emptyMsg.textContent = 'Error al obtener los grupos: ' + (e.message || e);
+    loginMsg.style.display = 'none';
+  }
+});
+</script>
+
+<script type="module">
+// getUserGroups adaptado a objetos globales de Firebase
+async function getUserGroups() {
+  return new Promise((resolve, reject) => {
+    window.auth.onAuthStateChanged(async user => {
+      console.log('[getUserGroups] Usuario autenticado:', user ? user.uid : null);
+
+      if (!user) {
+        resolve([]);
+        return;
+      }
+      try {
+        const userDocRef = window.db.collection('users').doc(user.uid);
+        const userSnap = await userDocRef.get();
+        const data = userSnap.data();
+        console.log('Datos del usuario:', data);
+        if (!data || !data.groupIds || data.groupIds.length === 0) {
+          // Si no hay groupIds, buscar grupos donde el usuario sea miembro
+          const grupos = [];
+          const querySnapshot = await window.db.collection('groups').where('members', 'array-contains', user.uid).get();
+          querySnapshot.forEach(doc => {
+            grupos.push({ id: doc.id, name: doc.data().name || doc.id });
+          });
+          if (grupos.length === 0) {
+            console.warn('[getUserGroups] No se encontraron grupos para el usuario por members.');
+          } else {
+            console.log('[getUserGroups] Grupos encontrados por members:', grupos);
+          }
+          resolve(grupos);
+          return;
+        }
+        const groupIds = data.groupIds;
+        const grupos = [];
+        for (const groupId of groupIds) {
+          const groupRef = window.db.collection('groups').doc(groupId);
+          const groupSnap = await groupRef.get();
+          if (groupSnap.exists) {
+            grupos.push({ id: groupId, name: groupSnap.data().name || groupId });
+          }
+        }
+        console.log('Grupos encontrados:', grupos);
+        resolve(grupos);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  });
+}
+// Firebase ahora se usa desde window.auth y window.db (CDN global)
+async function waitForAuth() {
+  while (!window.auth || typeof window.auth.onAuthStateChanged !== 'function') {
+    await new Promise(r => setTimeout(r, 50));
+  }
+  return window.auth;
+}
+
+
+const groupList = document.getElementById('group-list');
+const emptyMsg = document.getElementById('empty-msg');
+const loginMsg = document.getElementById('login-msg');
+
+async function renderGroups() {
+  try {
+    console.log('Llamando a getUserGroups...');
+    const grupos = await getUserGroups();
+    console.log('Resultado de getUserGroups (en renderGroups):', grupos);
+    if (!grupos) {
+      groupList.style.display = 'none';
+      emptyMsg.style.display = 'none';
+      loginMsg.style.display = 'block';
+      console.warn('[renderGroups] No hay grupos ni usuario autenticado.');
+      return;
+    }
+    loginMsg.style.display = 'none';
+    if (grupos.length === 0) {
+      groupList.style.display = 'none';
+      emptyMsg.style.display = 'block';
+      emptyMsg.innerHTML = 'No perteneces a ningún grupo todavía.<br><br><b>Debug:</b><br>Grupos encontrados: ' + JSON.stringify(grupos);
+// Mostrar también los datos del usuario
+try {
+  const auth = getAuth();
+  const db = getFirestore();
+  const user = auth.currentUser;
+  if (user) {
+    const userDocRef = doc(db, 'users', user.uid);
+    getDoc(userDocRef).then(snap => {
+      emptyMsg.innerHTML += '<br><b>userDoc:</b><br>' + JSON.stringify(snap.data());
+    });
+  }
+} catch (e) {
+  emptyMsg.innerHTML += '<br>Error obteniendo datos usuario: ' + (e.message || e);
+}
+      return;
+    }
+    groupList.innerHTML = '';
+    grupos.forEach(grupo => {
+      const li = document.createElement('li');
+      li.textContent = grupo.name;
+      li.classList.add('grupo-item');
+      li.onclick = () => window.location.href = `/grupo/${grupo.id}`;
+      groupList.appendChild(li);
+    });
+    groupList.style.display = 'block';
+    emptyMsg.style.display = 'none';
+  } catch (e) {
+    groupList.style.display = 'none';
+    emptyMsg.style.display = 'block';
+    emptyMsg.textContent = 'Error al obtener los grupos: ' + (e.message || e);
+    loginMsg.style.display = 'none';
+  }
+}
+waitForAuth().then(renderGroups);
+</script>
+
+<style>
+@import url('/src/styles/global.css');
+:root {
+  --color-bg: #f6f8fa;
+  --color-bg-alt: #fff;
+  --color-text: #23272f;
+  --color-heading: #181b22;
+  --color-link: #4e61ff;
+  --color-link-hover: #2e8fff;
+  --color-border: #d1d9e6;
+  --color-shadow: 0 2px 24px 0 rgba(80,110,180,0.08);
+  --color-success: #7fff8c;
+  --color-error: #ff7b7b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #181b22;
+    --color-bg-alt: #23263a;
+    --color-text: #e8eaf3;
+    --color-heading: #fff;
+    --color-link: #7b9fff;
+    --color-link-hover: #a7c7ff;
+    --color-border: #353a4a;
+    --color-shadow: 0 2px 24px 0 rgba(20,40,80,0.25);
+    --color-success: #7fff8c;
+    --color-error: #ff7b7b;
+  }
+}
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  font-family: 'Inter', Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.misgrupos-container {
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+  border-radius: 1.2rem;
+  box-shadow: var(--color-shadow);
+  padding: 2.5rem 2rem;
+  min-width: 320px;
+  max-width: 700px;
+  width: 100%;
+  margin: 3rem auto 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  position: relative;
+}
+.misgrupos-container h1 {
+  color: var(--color-heading);
+  font-size: 2.2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+.grupo-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+.grupo-item {
+  background: #23263a;
+  margin: 0.5rem 0;
+  padding: 1rem;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  color: #e8eaf3;
+  box-shadow: 0 1px 4px #0002;
+  transition: background 0.2s;
+  cursor: pointer;
+  text-align: center;
+}
+.grupo-item:hover {
+  background: #353a4a;
+}
+.status-message {
+  margin: 1rem 0 0 0;
+  font-size: 1.1rem;
+  text-align: center;
+}
+.status-error {
+  color: var(--color-error);
+}
+.status-empty {
+  color: var(--color-text);
+  opacity: 0.7;
+}
+@media (prefers-color-scheme: dark) {
+  .misgrupos-container {
+    background: #23263a;
+    color: #e8eaf3;
+  }
+  .grupo-item {
+    background: #23263a;
+    color: #e8eaf3;
+  }
+  .grupo-item:hover {
+    background: #353a4a;
+  }
+}
+@media (max-width: 600px) {
+  .misgrupos-container {
+    min-width: unset;
+    padding: 1.2rem 0.5rem;
+    max-width: 98vw;
+  }
+  .misgrupos-container h1 {
+    font-size: 1.4rem;
+  }
+}
+
+.volver-btn {
+  position: absolute;
+  top: 1.1rem;
+  left: 1.1rem;
+  padding: 0.4rem 0.7rem;
+  background: #ece6ff;
+  color: #7b61ff;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px #0001;
+  transition: background 0.2s;
+}
+h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #222;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+.grupo-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+.grupo-item {
+  background: #f3f3fd;
+  margin: 0.5rem 0;
+  padding: 1rem;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  color: #333;
+  box-shadow: 0 1px 4px #0001;
+  transition: background 0.2s;
+}
+.grupo-item:hover {
+  background: #e0e7ff;
+}
+.grupo-vacio {
+  color: #b00;
+  text-align: center;
+  margin-top: 1rem;
+}
+.status-message {
+  margin: 1rem 0 0 0;
+  font-size: 1.1rem;
+  text-align: center;
+}
+.status-error {
+  color: var(--color-error);
+}
+.status-empty {
+  color: var(--color-text);
+  opacity: 0.7;
+}
+</style>

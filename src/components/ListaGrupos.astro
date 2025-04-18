@@ -1,0 +1,112 @@
+---
+// No imports SSR
+---
+<div class="grupos-container">
+  <h2>Mis Grupos</h2>
+  <ul id="group-list" style="display:none;"></ul>
+  <p id="empty-msg" class="empty" style="display:none;">No perteneces a ningún grupo todavía.</p>
+</div>
+<script type="module" is:inline>
+// Firebase ahora se usa desde window.auth y window.db (CDN global)
+// Elimina imports ES6 de Firebase aquí
+import { collection, getDocs } from 'firebase/firestore';
+
+const groupList = document.getElementById('group-list');
+const emptyMsg = document.getElementById('empty-msg');
+
+function waitForAuth() {
+  return new Promise(resolve => {
+    if (window.auth.currentUser) {
+      resolve(window.auth.currentUser);
+    } else {
+      window.auth.onAuthStateChanged(user => {
+        resolve(user);
+      });
+    }
+  });
+}
+
+waitForAuth().then(async user => {
+  if (!user) {
+    groupList.style.display = 'none';
+    emptyMsg.style.display = 'block';
+    emptyMsg.textContent = 'Debes iniciar sesión para ver tus grupos.';
+    return;
+  }
+  // Buscar todos los grupos donde el usuario es creador o miembro
+  const gruposSnap = await getDocs(collection(db, 'groups'));
+  let gruposUsuario = [];
+  gruposSnap.forEach(docSnap => {
+    const grupo = docSnap.data();
+    if (Array.isArray(grupo.members) && grupo.members.includes(user.uid)) {
+      gruposUsuario.push({ id: docSnap.id, ...grupo });
+    } else if (grupo.createdBy === user.uid) {
+      gruposUsuario.push({ id: docSnap.id, ...grupo });
+    }
+  });
+  if (gruposUsuario.length === 0) {
+    groupList.style.display = 'none';
+    emptyMsg.style.display = 'block';
+    emptyMsg.textContent = 'No perteneces a ningún grupo todavía.';
+  } else {
+    groupList.innerHTML = '';
+    gruposUsuario.forEach(grupo => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = `/grupo/${grupo.id}`;
+      a.textContent = grupo.name + (Array.isArray(grupo.members) ? ` (${grupo.members.length} miembros)` : '');
+      a.style.textDecoration = 'none';
+      a.style.color = '#7b61ff';
+      li.appendChild(a);
+      groupList.appendChild(li);
+    });
+    groupList.style.display = 'block';
+    emptyMsg.style.display = 'none';
+  }
+});
+</script>
+<style>
+.grupos-container {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px 0 #0001;
+  padding: 2rem 1.5rem;
+  margin: 2rem auto 0 auto;
+  min-width: 320px;
+  max-width: 95vw;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+.grupos-container h2 {
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  color: #222;
+}
+.grupos-container ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+.grupos-container li {
+  background: #f3f3fd;
+  margin: 0.5rem 0;
+  padding: 1rem;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  color: #333;
+  box-shadow: 0 1px 4px #0001;
+  transition: background 0.2s;
+}
+.grupos-container li:hover {
+  background: #e0e7ff;
+}
+.empty {
+  color: #b00;
+  text-align: center;
+  margin-top: 1rem;
+}
+</style>

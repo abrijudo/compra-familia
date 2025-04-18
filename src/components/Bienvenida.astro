@@ -1,0 +1,129 @@
+---
+
+---
+<div class="main-card">
+  <h1 class="main-title">¡Bienvenido a Compra Familia!</h1>
+  <p id="welcome-msg">Gracias por usar nuestra aplicación. Esperamos que disfrutes tu experiencia de compra en familia.</p>
+  <p id="login-link"><a href="/login">Accede o regístrate aquí</a></p>
+  <div id="enlaces-grupos" class="enlaces-grupos" style="display:none;">
+    <a href="/mis-grupos" class="btn-main-link">Mis grupos</a>
+    <a href="/crear-grupo" class="btn-main-link">Crear un nuevo grupo</a>
+  </div>
+</div>
+<script type="module" is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const loginLink = document.getElementById('login-link');
+    const welcomeMsg = document.getElementById('welcome-msg');
+    const enlacesGrupos = document.getElementById('enlaces-grupos');
+
+    function waitForAuth() {
+      return new Promise(resolve => {
+        if (window.auth && typeof window.auth.onAuthStateChanged === 'function') {
+          resolve(window.auth);
+        } else {
+          const interval = setInterval(() => {
+            if (window.auth && typeof window.auth.onAuthStateChanged === 'function') {
+              clearInterval(interval);
+              resolve(window.auth);
+            }
+          }, 50);
+        }
+      });
+    }
+    waitForAuth().then(() => {
+      window.auth.onAuthStateChanged(user => {
+        if (user) {
+          loginLink.style.display = 'none';
+          welcomeMsg.innerHTML = `¡Bienvenido, <a href="#" id="perfil-link" style="font-family: Arial, sans-serif;">${user.email}</a>!`;
+          enlacesGrupos.style.display = 'block';
+
+          const perfilLink = document.getElementById('perfil-link');
+          if (perfilLink) {
+            perfilLink.classList.add('perfil-link-activo');
+            perfilLink.addEventListener('click', (e) => {
+              e.preventDefault();
+              window.dispatchEvent(new CustomEvent('abrir-perfil'));
+            });
+          }
+        } else {
+          loginLink.style.display = 'block';
+          welcomeMsg.textContent = 'Gracias por usar nuestra aplicación. Esperamos que disfrutes tu experiencia de compra en familia.';
+          enlacesGrupos.style.display = 'none';
+        }
+      });
+    });
+  });
+</script>
+<style>
+@import url('/src/styles/global.css');
+
+.hidden {
+  display: none !important;
+}
+
+.perfil-link-activo {
+  color: var(--color-link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.bienvenida-container a:hover {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+.main-card {
+  margin-top: 1.2rem;
+  text-align: center;
+}
+
+.main-title {
+  display: block;
+  margin-bottom: 0.7rem;
+  font-size: 1.4rem;
+}
+
+.btn-main-link {
+  display: block;
+  background: linear-gradient(90deg, #4e9fff 60%, #7b61ff 100%);
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 1.15rem;
+  text-align: center;
+  border-radius: 8px;
+  padding: 0.95rem 0;
+  margin: 0.6rem auto;
+  width: 90%;
+  max-width: 340px;
+  box-shadow: 0 2px 12px 0 #0002;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-main-link:hover {
+  background: linear-gradient(90deg, #4e9fff 0%, #7b61ff 100%);
+  color: #fff;
+  text-decoration: underline;
+}
+
+#welcome-msg {
+  color: var(--color-text);
+  margin: 0.5rem 0 0 0;
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+#login-link a {
+  color: var(--color-link);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+  display: inline-block;
+}
+
+#login-link a:hover {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+</style>

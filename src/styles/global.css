@@ -1,0 +1,136 @@
+/* === Variables globales === */
+:root {
+  --color-bg: #f6f8fa;
+  --color-bg-alt: #fff;
+  --color-text: #23272f;
+  --color-heading: #181b22;
+  --color-link: #4e61ff;
+  --color-link-hover: #2e8fff;
+  --color-border: #d1d9e6;
+  --color-shadow: 0 2px 24px 0 rgba(80,110,180,0.08);
+  --color-btn-main-bg: linear-gradient(90deg, #7b61ff 60%, #4e9fff 100%);
+  --color-btn-main-text: #fff;
+  --color-btn-cancel-bg: #ece6ff;
+  --color-success: #0a0;
+  --color-error: #b00;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #181b22;
+    --color-bg-alt: #23263a;
+    --color-text: #e8eaf3;
+    --color-heading: #fff;
+    --color-link: #7b9fff;
+    --color-link-hover: #a7c7ff;
+    --color-border: #353a4a;
+    --color-shadow: 0 2px 24px 0 rgba(20,40,80,0.25);
+    --color-btn-main-bg: linear-gradient(90deg, #4e9fff 60%, #7b61ff 100%);
+    --color-btn-main-text: #23272f;
+    --color-btn-cancel-bg: #23263a;
+    --color-success: #7fff8c;
+    --color-error: #ff7b7b;
+  }
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  font-family: 'Inter', Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* === Card principal reutilizable === */
+.main-card {
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+  border-radius: 1.2rem;
+  box-shadow: var(--color-shadow);
+  padding: 2.5rem 2rem;
+  min-width: 320px;
+  max-width: 700px;
+  width: 100%;
+  margin: 3rem auto 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  position: relative;
+}
+@media (max-width: 600px) {
+  .main-card {
+    min-width: unset;
+    padding: 1.2rem 0.5rem;
+    max-width: 98vw;
+  }
+}
+
+/* === Títulos principales === */
+.main-title {
+  color: var(--color-heading);
+  font-size: 2.2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .main-title {
+    font-size: 1.4rem;
+  }
+}
+
+/* === Botón principal === */
+.btn-main, .btn-main-link {
+  display: block;
+  background: var(--color-btn-main-bg);
+  color: var(--color-btn-main-text) !important;
+  font-weight: 700;
+  font-size: 1.15rem;
+  text-align: center;
+  border-radius: 8px;
+  padding: 0.95rem 0;
+  margin: 0.6rem auto;
+  width: 90%;
+  max-width: 340px;
+  box-shadow: 0 2px 12px 0 #0002;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-main:hover, .btn-main-link:hover {
+  background: linear-gradient(90deg, #4e9fff 0%, #7b61ff 100%);
+  color: #fff;
+  text-decoration: underline;
+}
+@media (max-width: 600px) {
+  .btn-main, .btn-main-link {
+    font-size: 1rem;
+    padding: 0.75rem 0;
+    width: 98%;
+  }
+}
+
+/* === Mensajes de estado === */
+.status-message {
+  margin: 1rem 0 0 0;
+  font-size: 1.1rem;
+  text-align: center;
+}
+.status-error {
+  color: var(--color-error);
+}
+.status-success {
+  color: var(--color-success);
+}
+.status-empty {
+  color: var(--color-text);
+  opacity: 0.7;
+}
+
+/* === Otros estilos globales útiles... === */
+

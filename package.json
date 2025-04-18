@@ -1,0 +1,19 @@
+{
+  "name": "compra-familia",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "firebase": "^11.6.0",
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "astro": "^5.7.3"
+  }
+}

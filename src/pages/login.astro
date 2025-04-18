@@ -1,0 +1,169 @@
+---
+import { auth } from '../firebaseConfig.js';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+
+let message = '';
+let error = '';
+if (typeof window !== 'undefined') {
+  const params = new URL(window.location.href).searchParams;
+  message = params.get('message') || '';
+  error = params.get('error') || '';
+}
+---
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Login / Registro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background: #f6f8fa;
+        font-family: 'Inter', Arial, sans-serif;
+        margin: 0;
+      }
+      h1 {
+        font-size: 2.2rem;
+        margin-bottom: 2rem;
+        color: #222;
+        letter-spacing: 0.03em;
+      }
+      form {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 16px 0 #0001;
+        padding: 2rem 1.5rem;
+        margin-bottom: 1.5rem;
+        min-width: 320px;
+        max-width: 90vw;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      form input[type="text"],
+      form input[type="email"],
+      form input[type="password"] {
+        width: 100%;
+        margin-bottom: 1rem;
+        box-sizing: border-box;
+      }
+      form button[type="submit"] {
+        width: 100%;
+        margin-bottom: 0;
+      }
+      .alt-msg {
+        text-align: center;
+        margin-bottom: 2em;
+      }
+      h2 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.2rem;
+        color: #444;
+        font-weight: 500;
+      }
+      input[type="text"], input[type="email"], input[type="password"] {
+        padding: 0.7rem 1rem;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1rem;
+        background: #f9f9f9;
+        transition: border 0.2s;
+      }
+      input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus {
+        border: 1.5px solid #7b61ff;
+        outline: none;
+      }
+      button[type="submit"] {
+        background: linear-gradient(90deg, #7b61ff 60%, #4e9fff 100%);
+        color: #fff;
+        border: none;
+        padding: 0.8rem 0;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-top: 0.5rem;
+      }
+      button[type="submit"]:hover {
+        background: linear-gradient(90deg, #4e9fff 0%, #7b61ff 100%);
+      }
+      p[style] {
+        margin: 0.5rem 0 0 0;
+        font-size: 1rem;
+        text-align: center;
+      }
+      @media (max-width: 480px) {
+        form {
+          min-width: unset;
+          padding: 1.2rem 0.5rem;
+        }
+        h1 {
+          font-size: 1.4rem;
+        }
+      }
+    </style>
+  
+  <head>
+    <meta charset="utf-8" />
+    <title>Login / Registro</title>
+    <meta name="viewport" content="width=device-width" />
+  </head>
+  <body>
+    <h1>Acceso a Compra Familia</h1>
+    <div class="container" style="position:relative;">
+      <button onclick="window.history.back()" aria-label="Atrás" style="position:absolute;top:1.1rem;left:1.1rem;padding:0.4rem 0.7rem;background:#ece6ff;color:#7b61ff;border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px #0001;transition:background 0.2s;">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g><path d="M17 12H7" stroke="#7b61ff" stroke-width="3" stroke-linecap="round"/><path d="M11 7L6 12L11 17" stroke="#7b61ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+</button>
+      <form id="loginForm" style="margin-bottom:2em" autocomplete="off">
+      <h2>Iniciar Sesión</h2>
+      <input type="email" name="email" placeholder="Correo electrónico" required />
+      <input type="password" name="password" placeholder="Contraseña" required />
+      <button type="submit">Iniciar sesión</button>
+    </form>
+    <div id="login-alt-msg" class="alt-msg">
+      ¿No tienes cuenta? Puedes crear una desde <a href="#" id="show-register" style="color:#7b61ff;font-weight:600;">Registrarse</a>.
+    </div>
+    <form id="registerForm" style="display:none;" autocomplete="off">
+      <h2>Registrarse</h2>
+      <input type="text" name="nombre" placeholder="Nombre" required autocomplete="off" />
+      <input type="text" name="apellidos" placeholder="Apellidos" required autocomplete="off" />
+      <input type="email" name="email" placeholder="Correo electrónico" required />
+      <input type="password" name="password" placeholder="Contraseña" required />
+      <button type="submit">Registrarse</button>
+    </form>
+    <div id="register-alt-msg" class="alt-msg" style="display:none;">
+      ¿Ya tienes cuenta? <a href="#" id="show-login" style="color:#7b61ff;font-weight:600;">Inicia sesión</a>
+    </div>
+    </form>
+    <p id="msg" style="color: green; display: none;"></p>
+    <p id="err" style="color: red; display: none;"></p>
+    <script type="module" src="/src/scripts/auth.js"></script>
+    <script is:inline>
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+      const loginAltMsg = document.getElementById('login-alt-msg');
+      const registerAltMsg = document.getElementById('register-alt-msg');
+      document.getElementById('show-register').onclick = (e) => {
+        e.preventDefault();
+        loginForm.style.display = 'none';
+        loginAltMsg.style.display = 'none';
+        registerForm.style.display = 'block';
+        registerAltMsg.style.display = 'block';
+      };
+      document.getElementById('show-login').onclick = (e) => {
+        e.preventDefault();
+        registerForm.style.display = 'none';
+        registerAltMsg.style.display = 'none';
+        loginForm.style.display = 'block';
+        loginAltMsg.style.display = 'block';
+      };
+    </script>
+  </body>
+</html>
